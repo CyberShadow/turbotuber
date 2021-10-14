@@ -1,0 +1,9 @@
+name "turbotuber"
+description "Relentless external youtube-dl downloader for YouTube"
+license "MPL-2.0"
+targetType "executable"
+
+sourceFiles "turbotuber.d"
+
+dependency "ae" version="==0.0.3100"
+dependency "ae:openssl" version="==0.0.3100"
