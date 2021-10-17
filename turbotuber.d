@@ -248,9 +248,7 @@ private:
 			bool keepGoing = handleData(offset, data);
 
 			if (!keepGoing)
-			{
-				disconnect("No more data is needed"); // TODO: this is broken
-			}
+				disconnect("No more data is needed");
 		}
 
 		override void onDone()
@@ -305,7 +303,7 @@ final class File
 		log("Created File.");
 
 		loaderStarter = setInterval(&startALoader, startFrequency);
-		startLoader(0, unknown);
+		startALoader();
 	}
 
 	void update()
@@ -393,8 +391,31 @@ private:
 
 	void startALoader()
 	{
+		if (!fileData)
+		{
+			if (loaders.empty)
+			{
+				log(format("Starting initial loader"));
+				startLoader(0, unknown);
+			}
+			else
+				log(format("Size not yet known, not starting loader"));
+			return;
+		}
+
 		Offset start = 0;
 		Offset[2][] gaps;
+
+		auto fragments = this.fragments.dup;
+		HashSet!Offset loaderOffsets;
+
+		foreach (loader; loaders)
+			if (loader.start != unknown)
+			{
+				fragments ~= Fragment(loader.start, 0);
+				loaderOffsets.add(loader.start);
+			}
+		fragments.sort!((a, b) => a.offset == b.offset ? a.end < b.end : a.offset < b.offset);
 
 		foreach (ref fragment; fragments)
 		{
@@ -405,7 +426,10 @@ private:
 		gaps.sort!((a, b) => a[1] - a[0] > b[1] - b[0]);
 		if (gaps[0][1] - gaps[0][0] > maxDistance)
 		{
-			start = (gaps[0][1] + gaps[0][0]) / 2;
+			start = gaps[0][0];
+			auto end = gaps[0][1];
+			if (start in loaderOffsets)
+				start = (start + end) / 2;
 			log(format("Starting a loader at %d for gap %d-%d (size %d)",
 					start, gaps[0][0], gaps[0][1], gaps[0][1] - gaps[0][0]));
 			startLoader(start, gaps[0][1] ? gaps[0][1] : unknown);
