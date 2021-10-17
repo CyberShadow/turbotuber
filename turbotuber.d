@@ -613,7 +613,7 @@ void redraw(bool force = false)
 
 	int barWidth;
 	if ("COLUMNS" in environment)
-		barWidth = environment["COLUMNS"].to!int - 10;
+		barWidth = environment["COLUMNS"].to!int - 25;
 	else
 		barWidth = 100;
 
@@ -664,10 +664,11 @@ void redraw(bool force = false)
 		}
 
 		import std.stdio : stdout;
-		stdout.writef("[%s] %s%%, %s\r",
+		stdout.writef("[%s] %s%%, %s/s in %dc\r",
 			line,
 			100 * totalDone / file.fileData.length,
-			humanSize(file.bytesReceivedLastSecond)
+			humanSize(file.bytesReceivedLastSecond),
+			file.loaders.length,
 		);
 		stdout.flush();
 	}
