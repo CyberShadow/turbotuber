@@ -625,6 +625,7 @@ void redraw(bool force = false)
 		if (!file.fileData)
 			continue;
 
+		Offset totalDone;
 		foreach (ref fragment; file.fragments)
 		{
 			assert(fragment.length);
@@ -639,6 +640,8 @@ void redraw(bool force = false)
 				auto cellEnd   = min(fragment.end   , file.fileData.length * (i + 1) / barWidth);
 				cellBytes[i] += cellEnd - cellStart;
 			}
+
+			totalDone += fragment.length;
 		}
 
 		foreach (i; 0 .. barWidth)
@@ -661,7 +664,12 @@ void redraw(bool force = false)
 		}
 
 		import std.stdio : stdout;
-		stdout.write("[", line, "] ", humanSize(file.bytesReceivedLastSecond), "/s\r"); stdout.flush();
+		stdout.writef("[%s] %s%%, %s\r",
+			line,
+			100 * totalDone / file.fileData.length,
+			humanSize(file.bytesReceivedLastSecond)
+		);
+		stdout.flush();
 	}
 }
 
