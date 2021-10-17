@@ -417,41 +417,37 @@ private:
 			return;
 		}
 
-		Offset start = 0;
-		Offset[2][] gaps;
+		Offset[] points = [0, fileData.length];
+		foreach (fragment; fragments)
+			points ~= [fragment.offset, fragment.end];
 
-		auto fragments = this.fragments.dup;
 		HashSet!Offset loaderOffsets;
-
 		foreach (loader; loaders)
 			if (loader.start != unknown)
 			{
-				fragments ~= Fragment(loader.start, 0);
+				points ~= loader.start;
 				loaderOffsets.add(loader.start);
 			}
-		fragments.sort!((a, b) => a.offset == b.offset ? a.end < b.end : a.offset < b.offset);
-
-		foreach (ref fragment; fragments)
+		points = points.sort().uniq().array();
+		auto biggestGap = zip(points, points.dropOne)
+			.filter!(p => !dataAt(p[0]))
+			.array
+			.sort!((a, b) => a[1] - a[0] > b[1] - b[0])
+			.front;
+		if (biggestGap[1] - biggestGap[0] > maxDistance)
 		{
-			gaps ~= [start, fragment.offset];
-			start = fragment.end;
-		}
-		gaps ~= [start, fileData.length];
-		gaps.sort!((a, b) => a[1] - a[0] > b[1] - b[0]);
-		if (gaps[0][1] - gaps[0][0] > maxDistance)
-		{
-			start = gaps[0][0];
-			auto end = gaps[0][1];
+			auto start = biggestGap[0];
+			auto end = biggestGap[1];
 			if (start in loaderOffsets)
 				start = (start + end) / 2;
 			log(format("Starting a loader at %d for gap %d-%d (size %d)",
-					start, gaps[0][0], gaps[0][1], gaps[0][1] - gaps[0][0]));
-			startLoader(start, gaps[0][1] ? gaps[0][1] : unknown);
+					start, biggestGap[0], biggestGap[1], biggestGap[1] - biggestGap[0]));
+			startLoader(start, biggestGap[1] ? biggestGap[1] : unknown);
 		}
 		else
 		{
 			log(format("Not starting a loader, biggest gap at %d-%d is too small (%d)",
-					gaps[0][0], gaps[0][1], gaps[0][1] - gaps[0][0]));
+					biggestGap[0], biggestGap[1], biggestGap[1] - biggestGap[0]));
 		}
 	}
 
