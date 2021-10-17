@@ -315,6 +315,9 @@ final class File
 
 	@property Offset sizeSoFar() { return chain(Fragment.init.only, fragments).back.end; }
 
+	Offset bytesReceivedThisSecond, bytesReceivedLastSecond;
+	uint second;
+
 private:
 	/// URL to the server file.
 	string[] urls;
@@ -503,6 +506,15 @@ private:
 
 	bool onLoaderData(Offset offset, Data[] data)
 	{
+		auto second = Clock.currTime.second;
+		if (this.second != second)
+		{
+			bytesReceivedLastSecond = bytesReceivedThisSecond;
+			bytesReceivedThisSecond = 0;
+			this.second = second;
+		}
+		bytesReceivedThisSecond += data.bytes.length;
+
 		size_t fragmentIndex; // Insert here
 
 		foreach (datum; data)
@@ -601,7 +613,7 @@ void redraw(bool force = false)
 
 	int barWidth;
 	if ("COLUMNS" in environment)
-		barWidth = environment["COLUMNS"].to!int - 1;
+		barWidth = environment["COLUMNS"].to!int - 10;
 	else
 		barWidth = 100;
 
@@ -649,6 +661,18 @@ void redraw(bool force = false)
 		}
 
 		import std.stdio : stdout;
-		stdout.write("[", line, "]\r"); stdout.flush();
+		stdout.write("[", line, "] ", humanSize(file.bytesReceivedLastSecond), "/s\r"); stdout.flush();
 	}
+}
+
+string humanSize(real size)
+{
+	static immutable prefixChars = " KMGTPEZY";
+	size_t power = 0;
+	while (size > 1024 && power + 1 < prefixChars.length)
+	{
+		size /= 1024;
+		power++;
+	}
+	return format("%3.1f %s%sB", size, prefixChars[power], prefixChars[power] == ' ' ? ' ' : 'i');
 }
