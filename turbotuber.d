@@ -329,12 +329,23 @@ private:
 		Offset offset;
 		size_t length;
 
-		@property Offset end() { return offset + length; }
+		@property Offset end() const { return offset + length; }
 	}
 	Fragment[] fragments;
 
-	/// unknown if unknown
 	Data fileData;
+
+	invariant
+	{
+		Offset p = 0;
+		foreach (ref fragment; fragments)
+		{
+			assert(fragment.offset >= p);
+			assert(fragment.end >= fragment.offset);
+			p = fragment.end;
+		}
+		assert(p <= fileData.length);
+	}
 
 	/// For cleanup
 	SysTime timeLastActivity;
