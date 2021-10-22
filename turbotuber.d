@@ -1,4 +1,3 @@
-import core.sys.posix.unistd;
 import core.time;
 
 import std.algorithm.comparison;
@@ -460,8 +459,11 @@ private:
 		{
 			import std.stdio : File;
 			auto f = File(outputFileName, "wb");
-			ftruncate(f.fileno, totalSize);
+			f.seek(totalSize - 1);
+			ubyte z;
+			f.write((&z)[0..1]);
 			f.close();
+
 			fileData = mapFile(outputFileName, MmMode.readWrite, 0, totalSize);
 		}
 		if (fileData && totalSize != unknown)
